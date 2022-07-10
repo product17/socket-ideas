@@ -6,6 +6,7 @@ import {
   deleteToken,
   getToken,
 } from '../token';
+import { emailRegEx } from '../auth/auth.setup';
 import {
   createUser,
   getUser,
@@ -16,7 +17,6 @@ import {
 } from './user.controller';
 
 const userRouter = express.Router();
-const emailRegEx = new RegExp('^[a-zA-Z0-9.!#$%&’*+\/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$');
 
 userRouter.get(
   '/:username',
@@ -89,7 +89,8 @@ userRouter.post('/', json(), async (req, res) => {
 userRouter.post('/password-reset-token', json(), async (req, res) => {
   if (!req.body?.email && !req.body?.username) {
     return res.status(400).json({
-      message: 'Username or Email is required to reset your password',
+      status: 'Failed',
+      message: 'Either Username or Email is required to reset your password',
     });
   }
 
@@ -102,27 +103,39 @@ userRouter.post('/password-reset-token', json(), async (req, res) => {
       // is email
       user = await getUserByEmail(keyName);
     } else {
+      console.log(keyName);
       // is username
       user = await getUserByUsername(keyName);
     }
 
-    const token = await createToken(user._id);
+    if (!user) {
+      return res.json({
+        status: 'Failed',
+        message: 'username or email does not exist',
+      });
+    }
 
+    const token = await createToken(user._id);
+    console.log(token);
     res.json({
-      message: token,
+      status: 'Success',
+      message: 'check the console (eventually your email)',
     });
   } catch (err) {
+    console.log(err);
     return res.status(500).json({
+      status: 'Failed',
       message: 'The server is having an issue...',
     });
   }
 });
 
-userRouter.post('/password-reset', json(), async (req, res) => {
+userRouter.post('/reset-password', json(), async (req, res) => {
   console.log(req.body?.token);
   if (!req.body?.token) {
     return res.status(400).json({
       message: 'missing token',
+      status: 'Failed',
     });
   }
 
@@ -130,32 +143,36 @@ userRouter.post('/password-reset', json(), async (req, res) => {
     const token = await getToken(req.body.token);
     if (token) {
       const user = await getUserById(token.userId);
-      console.log(user);
+
       if (user) {
-        const updatedUser = await updateUser(user, {
+        await updateUser(user, {
           password: req.body.password,
         });
 
-        console.log(updatedUser);
-
-        await deleteToken(token)
+        deleteToken(token); // no need to await
 
         return res.json({
           message: 'password reset',
+          status: 'Success'
         });
       }
 
       return res.status(404).json({
         message: 'user does not exist',
+        status: 'Failed',
       });
     }
 
     return res.status(403).json({
       message: 'invalid token',
+      status: 'Failed',  
     });
   } catch (err) {
     console.log(err);
-    res.status(500).json('server error...');
+    res.status(500).json({
+      message: 'Server error',
+      status: 'Failed',  
+    });
   }
 });
 

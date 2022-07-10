@@ -1,10 +1,13 @@
 import LocalStrategy from 'passport-local/lib/strategy';
-import { getUserByUsername } from '../users/user.controller';
+import { getUserByEmail, getUserByUsername } from '../users/user.controller';
 import {
   IncorrectUserNameOrPassword,
 } from './auth.errors';
 
+export const emailRegEx = new RegExp('^[a-zA-Z0-9.!#$%&’*+\/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$');
+
 export function authSetup(passport) {
+  console.log('test')
   passport.serializeUser(function(user, done) {
     console.log('serializer');
     done(null, user.username);
@@ -21,12 +24,19 @@ export function authSetup(passport) {
   
   passport.use(new LocalStrategy(
     {
-      usernameField: 'userName',
-      passwordField: 'password'
+      usernameField: 'username',
+      passwordField: 'password',
     },
     async function(username, password, done) {
       try {
-        const user = await getUserByUsername(username);
+        let user = null;
+        if (emailRegEx.test(username)) {
+          user = await getUserByEmail(username);
+        } else {
+          user = await getUserByUsername(username);
+        }
+
+        console.log(user);
         if (!user) {
           return done(null, false, IncorrectUserNameOrPassword);
         }

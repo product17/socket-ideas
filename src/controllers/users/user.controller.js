@@ -26,5 +26,7 @@ export async function getUserByUsername(username) {
 }
 
 export async function updateUser(user, update) {
-  return await Users.updateOne({ _id: user._id }, update);
+  user.password = update.password;
+  user.save();
+  // return await Users.updateOne({ _id: user._id }, update);
 }

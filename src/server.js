@@ -21,6 +21,7 @@ import socketConnection from './sockets/connection.socket';
 // import { json } from 'body-parser';
 
 import mongoose from 'mongoose';
+import { runInNewContext } from 'vm';
 mongoose.connect('mongodb://localhost:27017/test', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -53,7 +54,7 @@ app.use(session({
   cookie: {
     // httpOnly: true,
     // maxAge: 20 * 60 * 1000, // 20 minutes
-    secure: true,
+    secure: false,
   },
   name: 'rollinstones',
   resave: false,
@@ -69,7 +70,7 @@ app.use(passport.session());
 
 app.use('/lobby', lobbyRouter);
 
-app.use('/user', userRouter);
+app.use('/users', userRouter);
 
 app.use('/games', games);
 
